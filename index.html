@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Album Mario</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    :root { --mario-red: #e4000f; --mario-blue: #049cd8; --mario-yellow: #fbd000; --mario-green: #43b047; }
+    html { min-height: 100%; background: #5c94fc; }
+    body { min-height: 100vh; font-family: "Fredoka", system-ui, sans-serif; background: transparent;
+      background-image: radial-gradient(circle at 20% 10%, rgba(255,255,255,.25) 0 60px, transparent 61px),
+                        radial-gradient(circle at 80% 30%, rgba(255,255,255,.2) 0 80px, transparent 81px);
+      background-repeat: no-repeat; background-attachment: fixed; }
+    .font-cartoon { font-family: "Luckiest Guy", "Fredoka", cursive; }
+    .mario-header { background: var(--mario-red); color: #fff; border-bottom: 6px solid #8b0000; }
+    .mario-title { font-family: "Luckiest Guy", cursive; letter-spacing: 2px; text-shadow: 4px 4px 0 #000; color: var(--mario-yellow); }
+    .nav-pills .nav-link { font-family: "Luckiest Guy", cursive; letter-spacing: 1px; font-size: 1.15rem; color: #fff; background: rgba(0,0,0,.25); }
+    .nav-pills .nav-link.active { background: var(--mario-yellow); color: #000; box-shadow: 0 4px 0 #b8940a; }
+    .sticker { cursor: pointer; user-select: none; aspect-ratio: 1 / 1; position: relative; transition: transform .1s; border-width: 3px; border-radius: .9rem; }
+    .sticker:hover { transform: scale(1.06); }
+    .sticker .num { font-family: "Luckiest Guy", cursive; font-size: 1.9rem; line-height: 1; letter-spacing: 1px; }
+    .sticker .state { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+    .sticker .icon { font-size: 1rem; opacity: .85; }
+    .sticker .minus { position: absolute; top: 3px; left: 7px; opacity: .6; font-size: .95rem; }
+    .sticker .minus:hover { opacity: 1; transform: scale(1.2); }
+    .sticker .badge { position: absolute; top: 5px; right: 5px; font-family: "Fredoka"; }
+    .sticker.missing { background: #e9ecef; color: #8a8f94; border-color: #ced4da; }
+    .sticker.filled  { background: var(--mario-green); color: #fff; border-color: #2c7a2f; }
+    .sticker.repeat  { background: var(--mario-yellow); color: #5a4500; border-color: #c9a500; }
+    #filterGroup { flex-wrap: wrap; }
+    #filterGroup .btn { white-space: nowrap; font-weight: 600; }
+    @media (max-width: 575.98px) { #filterGroup { width: 100%; } #filterGroup .btn { flex: 1 1 45%; } }
+    .card-header.summary { background: #fff8dc; }
+    .toolbar { background: #fff; border-bottom: 5px solid var(--mario-blue); }
+    .avatar { width: 34px; height: 34px; object-fit: cover; }
+    .btn-google { background: #fff; color: #333; border: 2px solid #ddd; font-weight: 700; }
+    .btn-google:hover { background: #f5f5f5; border-color: #bbb; }
+    .login-card { max-width: 520px; margin: 3rem auto; border-radius: 1.5rem; }
+    .login-card .bi-person-circle { font-size: 4rem; color: var(--mario-red); }
+  </style>
+</head>
+<body>
+
+<header class="mario-header py-3 mb-3 shadow">
+  <div class="container">
+    <div class="row align-items-center g-2">
+      <div class="col-12 col-md text-center text-md-start">
+        <h1 class="mario-title mb-0 display-5"><i class="bi bi-stars"></i> IT´S-A ME, MARIO! <i class="bi bi-stars"></i></h1>
+        <div class="font-cartoon opacity-75"><i class="bi bi-journal-album"></i> Álbum de tarjetas</div>
+      </div>
+      <div class="col-12 col-md-auto text-center" id="userBox">
+        <span class="badge text-bg-light"><span class="spinner-border spinner-border-sm"></span> Conectando…</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="container pb-5">
+
+  <!-- Pantalla de login -->
+  <div id="loginView" hidden>
+    <div class="card login-card shadow text-center">
+      <div class="card-body p-4">
+        <i class="bi bi-person-circle"></i>
+        <h2 class="font-cartoon mt-2">¡Inicia sesión para guardar tu álbum!</h2>
+        <p class="text-muted">Tus tarjetas se guardan en la nube con tu cuenta de Google. Podrás recuperarlas desde cualquier dispositivo.</p>
+        <button class="btn btn-google btn-lg rounded-pill px-4" id="btnLogin">
+          <i class="bi bi-google text-danger"></i> Continuar con Google
+        </button>
+        <div id="loginError" class="alert alert-danger mt-3 text-start small" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div id="appView" hidden>
+    <div class="card shadow toolbar mb-3 sticky-top rounded-4" style="top:.5rem">
+      <div class="card-body py-2">
+        <div class="row g-2 align-items-center">
+          <div class="col-12 col-lg">
+            <div class="btn-group" role="group" aria-label="Filtro de estado" id="filterGroup">
+              <input type="radio" class="btn-check" name="filter" id="f-todas" value="todas" autocomplete="off">
+              <label class="btn btn-outline-dark" for="f-todas"><i class="bi bi-grid-3x3-gap-fill"></i> Todas</label>
+              <input type="radio" class="btn-check" name="filter" id="f-llenadas" value="llenadas" autocomplete="off">
+              <label class="btn btn-outline-success" for="f-llenadas"><i class="bi bi-check-circle-fill"></i> Llenadas</label>
+              <input type="radio" class="btn-check" name="filter" id="f-faltan" value="faltan" autocomplete="off">
+              <label class="btn btn-outline-secondary" for="f-faltan"><i class="bi bi-question-circle-fill"></i> Me faltan</label>
+              <input type="radio" class="btn-check" name="filter" id="f-repetidas" value="repetidas" autocomplete="off">
+              <label class="btn btn-outline-warning" for="f-repetidas"><i class="bi bi-files"></i> Repetidas</label>
+            </div>
+          </div>
+          <div class="col-12 col-lg-auto d-flex gap-2 align-items-center">
+            <span id="syncBadge" class="badge text-bg-success"><i class="bi bi-cloud-check-fill"></i> Guardado</span>
+            <div class="dropdown flex-grow-1">
+              <button class="btn btn-primary dropdown-toggle w-100 fw-bold" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-download"></i> Exportar
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#" data-export="download"><i class="bi bi-file-earmark-text"></i> Descargar .txt</a></li>
+                <li><a class="dropdown-item" href="#" data-export="copy"><i class="bi bi-clipboard"></i> Copiar al portapapeles</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="nav nav-pills nav-fill mb-3 gap-2" id="sectionTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-main" data-bs-toggle="pill" data-bs-target="#pane-main" data-section="main" type="button" role="tab">
+          <i class="bi bi-star-fill text-warning"></i> IT´S-A ME, MARIO! <span class="badge text-bg-light ms-1">1 – 180</span>
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-years" data-bs-toggle="pill" data-bs-target="#pane-years" data-section="years" type="button" role="tab">
+          <i class="bi bi-hourglass-split"></i> A TRAVÉS DE LOS AÑOS <span class="badge text-bg-light ms-1">M1 – M44</span>
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      <div class="tab-pane fade" id="pane-main" role="tabpanel"></div>
+      <div class="tab-pane fade" id="pane-years" role="tabpanel"></div>
+    </div>
+
+    <p class="text-center text-white small mt-3 opacity-75">
+      <i class="bi bi-hand-index-thumb"></i> Clic en una tarjeta: gris → llenada → repetida (+1 cada clic).
+      <i class="bi bi-dash-circle"></i> resta una de una en una.
+    </p>
+  </div>
+</main>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+  <div id="toast" class="toast text-bg-dark" role="alert" aria-live="polite">
+    <div class="d-flex"><div class="toast-body" id="toastBody"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+  import { getAnalytics, isSupported as analyticsSupported } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut }
+    from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+  import { getDatabase, ref, onValue, set, update, get, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+  import { firebaseConfig } from "./firebase-config.js";
+
+  // ---------- Firebase ----------
+  // La configuración vive en firebase-config.js (no versionado). Ver firebase-config.example.js
+  const app = initializeApp(firebaseConfig);
+  analyticsSupported().then(ok => { if (ok) getAnalytics(app); }).catch(() => {});
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+
+  // ---------- Modelo ----------
+  const SECTIONS = {
+    main:  { title: "IT´S-A ME, MARIO!",   total: 180, prefix: "",  icon: "bi-star-fill" },
+    years: { title: "A TRAVÉS DE LOS AÑOS", total: 44,  prefix: "M", icon: "bi-hourglass-split" }
+  };
+  const FILTERS = { todas: "Todas", llenadas: "Llenadas", faltan: "Me faltan", repetidas: "Repetidas" };
+  const PAGE_SIZE = 30;
+  const PREFS_KEY = "albumMario.prefs";     // filtro / sección / página (solo UI, local)
+  const LEGACY_KEY = "albumMario.v2";       // datos de la versión sin login (se migran a la nube)
+
+  // counts[section][id] = 0 falta | 1 llenada | n>=2 repetida (n-1 veces)
+  let counts = { main: {}, years: {} };
+  let prefs = { filter: "todas", section: "main", page: {} };
+  try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREFS_KEY)) || {}); } catch (e) {}
+  const savePrefs = () => localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+
+  let user = null, unsubscribe = null;
+  const $ = (id) => document.getElementById(id);
+
+  // RTDB devuelve arreglos cuando las claves son numéricas y densas; normalizamos a objeto.
+  const normalize = (raw) => {
+    const out = { main: {}, years: {} };
+    for (const s of Object.keys(SECTIONS)) {
+      const v = raw && raw[s];
+      if (!v) continue;
+      if (Array.isArray(v)) v.forEach((c, i) => { if (c) out[s][i] = c; });
+      else for (const k of Object.keys(v)) if (v[k]) out[s][k] = v[k];
+    }
+    return out;
+  };
+
+  const getCount = (s, id) => counts[s][id] || 0;
+  const label = (s, id) => SECTIONS[s].prefix + id;
+  const matches = (c, f) => f === "todas" ? true : f === "llenadas" ? c >= 1 : f === "faltan" ? c === 0 : c >= 2;
+
+  const filtered = (s) => {
+    const out = [];
+    for (let id = 1; id <= SECTIONS[s].total; id++) {
+      const c = getCount(s, id);
+      if (matches(c, prefs.filter)) out.push({ id, count: c });
+    }
+    return out;
+  };
+  const stats = (s) => {
+    let filled = 0, repeated = 0;
+    for (let id = 1; id <= SECTIONS[s].total; id++) {
+      const c = getCount(s, id);
+      if (c >= 1) filled++;
+      if (c >= 2) repeated += c - 1;
+    }
+    return { filled, missing: SECTIONS[s].total - filled, repeated };
+  };
+
+  // ---------- Render ----------
+  function stickerHTML(s, { id, count }) {
+    const cls  = count === 0 ? "missing" : count === 1 ? "filled" : "repeat";
+    const txt  = count === 0 ? "Me falta" : count === 1 ? "Llenada" : "Repetida";
+    const icon = count === 0 ? "bi-question-lg" : count === 1 ? "bi-check-lg" : "bi-files";
+    return `
+      <div class="col">
+        <div class="card sticker shadow ${cls}" data-section="${s}" data-id="${id}" title="${label(s, id)} · clic para marcar">
+          ${count > 0 ? `<i class="bi bi-dash-circle-fill minus" title="Quitar una"></i>` : ""}
+          ${count >= 2 ? `<span class="badge rounded-pill text-bg-danger">${count - 1}</span>` : ""}
+          <div class="card-body d-flex flex-column justify-content-center align-items-center p-1">
+            <i class="bi ${icon} icon"></i>
+            <div class="num">${label(s, id)}</div>
+            <div class="state">${txt}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function paginationHTML(s, page, pages) {
+    if (pages <= 1) return "";
+    let items = "";
+    for (let p = 1; p <= pages; p++)
+      items += `<li class="page-item ${p === page ? "active" : ""}"><a class="page-link" href="#" data-page="${p}" data-section="${s}">${p}</a></li>`;
+    return `<nav class="mt-3"><ul class="pagination justify-content-center flex-wrap mb-0">
+      <li class="page-item ${page === 1 ? "disabled" : ""}"><a class="page-link" href="#" data-page="${page - 1}" data-section="${s}"><i class="bi bi-chevron-left"></i></a></li>
+      ${items}
+      <li class="page-item ${page === pages ? "disabled" : ""}"><a class="page-link" href="#" data-page="${page + 1}" data-section="${s}"><i class="bi bi-chevron-right"></i></a></li>
+    </ul></nav>`;
+  }
+
+  function sectionHTML(s) {
+    const list = filtered(s);
+    const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+    const page = Math.min(Math.max(1, prefs.page[s] || 1), pages);
+    prefs.page[s] = page;
+    const slice = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    const st = stats(s);
+    const pct = Math.round((st.filled / SECTIONS[s].total) * 100);
+    return `
+      <div class="card mb-3 shadow rounded-4 overflow-hidden">
+        <div class="card-header summary d-flex flex-wrap align-items-center gap-2">
+          <strong class="font-cartoon fs-5"><i class="bi ${SECTIONS[s].icon}"></i> ${SECTIONS[s].title}</strong>
+          <span class="badge text-bg-success"><i class="bi bi-check-circle-fill"></i> Llenadas ${st.filled}/${SECTIONS[s].total}</span>
+          <span class="badge text-bg-secondary"><i class="bi bi-question-circle-fill"></i> Me faltan ${st.missing}</span>
+          <span class="badge text-bg-warning"><i class="bi bi-files"></i> Repetidas ${st.repeated}</span>
+          <div class="progress flex-grow-1" style="height:10px;min-width:120px" title="${pct}%">
+            <div class="progress-bar bg-success progress-bar-striped" style="width:${pct}%"></div>
+          </div>
+          <small class="text-muted"><i class="bi bi-funnel-fill"></i> ${FILTERS[prefs.filter]}: ${slice.length} de ${list.length}</small>
+        </div>
+        <div class="card-body">
+          ${slice.length ? `<div class="row row-cols-3 row-cols-sm-4 row-cols-md-5 row-cols-lg-6 g-2">${slice.map(x => stickerHTML(s, x)).join("")}</div>`
+                         : `<div class="alert alert-info mb-0 text-center"><i class="bi bi-emoji-frown"></i> No hay tarjetas con el filtro "${FILTERS[prefs.filter]}".</div>`}
+          ${paginationHTML(s, page, pages)}
+        </div>
+      </div>`;
+  }
+
+  function render() {
+    for (const s of Object.keys(SECTIONS)) $("pane-" + s).innerHTML = sectionHTML(s);
+    savePrefs();
+  }
+
+  const toast = (msg) => { $("toastBody").textContent = msg; bootstrap.Toast.getOrCreateInstance($("toast")).show(); };
+  const setSync = (state) => {
+    const b = $("syncBadge");
+    b.className = "badge " + (state === "saving" ? "text-bg-warning" : state === "error" ? "text-bg-danger" : "text-bg-success");
+    b.innerHTML = state === "saving" ? '<span class="spinner-border spinner-border-sm"></span> Guardando…'
+                : state === "error"  ? '<i class="bi bi-cloud-slash-fill"></i> Sin conexión'
+                : '<i class="bi bi-cloud-check-fill"></i> Guardado';
+  };
+
+  // ---------- Persistencia en Realtime Database ----------
+  const userRef = (path) => ref(db, `users/${user.uid}/${path}`);
+
+  async function writeCount(s, id, value) {
+    counts[s][id] = value;                 // actualización optimista
+    render();
+    setSync("saving");
+    try {
+      await set(userRef(`counts/${s}/${id}`), value > 0 ? value : null);
+      setSync("ok");
+    } catch (err) {
+      console.error(err); setSync("error"); toast("No se pudo guardar: " + err.message);
+    }
+  }
+
+  async function migrateLegacy() {
+    let legacy = null;
+    try { legacy = JSON.parse(localStorage.getItem(LEGACY_KEY)); } catch (e) {}
+    if (!legacy || !legacy.counts) return;
+    const local = normalize(legacy.counts);
+    const has = Object.keys(local.main).length + Object.keys(local.years).length;
+    if (!has) { localStorage.removeItem(LEGACY_KEY); return; }
+    const snap = await get(userRef("counts"));
+    if (!snap.exists()) {
+      await set(userRef("counts"), local);
+      toast("Se subieron a la nube tus tarjetas guardadas en este navegador.");
+    }
+    localStorage.removeItem(LEGACY_KEY);
+  }
+
+  function subscribe() {
+    if (unsubscribe) unsubscribe();
+    unsubscribe = onValue(userRef("counts"), (snap) => {
+      counts = normalize(snap.val());
+      render();
+      setSync("ok");
+    }, (err) => { console.error(err); setSync("error"); toast("Error al leer la nube: " + err.message); });
+  }
+
+  // ---------- Auth ----------
+  function renderUser() {
+    const box = $("userBox");
+    if (!user) {
+      box.innerHTML = `<button class="btn btn-google btn-sm rounded-pill" id="btnLoginTop"><i class="bi bi-google text-danger"></i> Iniciar sesión</button>`;
+      $("btnLoginTop").addEventListener("click", login);
+      return;
+    }
+    const photo = user.photoURL ? `<img src="${user.photoURL}" class="rounded-circle avatar" alt="" referrerpolicy="no-referrer">` : `<i class="bi bi-person-circle fs-3"></i>`;
+    box.innerHTML = `
+      <div class="d-inline-flex align-items-center gap-2 bg-white text-dark rounded-pill ps-1 pe-2 py-1 shadow-sm">
+        ${photo}
+        <span class="fw-semibold small text-truncate" style="max-width:160px">${user.displayName || user.email}</span>
+        <button class="btn btn-outline-danger btn-sm rounded-pill" id="btnLogout" title="Cerrar sesión"><i class="bi bi-box-arrow-right"></i> Salir</button>
+      </div>`;
+    $("btnLogout").addEventListener("click", () => signOut(auth));
+  }
+
+  async function login() {
+    $("loginError").hidden = true;
+    if (location.protocol === "file:") {
+      showLoginError("El inicio de sesión con Google no funciona abriendo el archivo directamente. Ábrelo desde un servidor (http://localhost) o desde la URL publicada.");
+      return;
+    }
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (err) {
+      if (["auth/popup-blocked", "auth/popup-closed-by-user", "auth/cancelled-popup-request"].includes(err.code)) {
+        if (err.code === "auth/popup-blocked") return signInWithRedirect(auth, provider);
+        return;
+      }
+      console.error(err);
+      showLoginError(friendlyAuthError(err));
+    }
+  }
+  const friendlyAuthError = (err) => ({
+    "auth/operation-not-allowed": "El proveedor Google no está habilitado en Firebase Authentication.",
+    "auth/configuration-not-found": "Firebase Authentication aún no está configurado en el proyecto (Consola → Authentication → Comenzar → Google).",
+    "auth/unauthorized-domain": `Este dominio (${location.hostname}) no está autorizado en Firebase Authentication.`,
+    "auth/network-request-failed": "Sin conexión a internet."
+  }[err.code] || `${err.code || ""} ${err.message || err}`);
+  const showLoginError = (msg) => { const e = $("loginError"); e.textContent = msg; e.hidden = false; };
+
+  getRedirectResult(auth).catch(err => showLoginError(friendlyAuthError(err)));
+
+  // Aviso temprano si Authentication / Google aún no están habilitados en la consola de Firebase.
+  (async () => {
+    try {
+      const r = await fetch(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/getProjectConfig?key=${firebaseConfig.apiKey}`);
+      const j = await r.json();
+      if (j.error) { showLoginError(friendlyAuthError({ code: "auth/configuration-not-found" })); return; }
+      const google = (j.idpConfig || []).find(p => p.provider === "GOOGLE");
+      if (google && google.enabled === false) showLoginError(friendlyAuthError({ code: "auth/operation-not-allowed" }));
+    } catch (e) { /* sin red: se informará al intentar iniciar sesión */ }
+  })();
+
+  function showLoggedOut() {
+    if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+    counts = { main: {}, years: {} };
+    $("appView").hidden = true; $("loginView").hidden = false;
+  }
+  // Si Auth no responde (p. ej. aún no configurado en la consola), mostramos el login de todos modos.
+  setTimeout(() => { if (!user && $("loginView").hidden && $("appView").hidden) { renderUser(); showLoggedOut(); } }, 2500);
+
+  onAuthStateChanged(auth, async (u) => {
+    user = u;
+    renderUser();
+    if (!user) { showLoggedOut(); return; }
+    $("loginView").hidden = true; $("appView").hidden = false;
+    try {
+      await update(userRef("profile"), { name: user.displayName || "", email: user.email || "", photo: user.photoURL || "", lastLogin: serverTimestamp() });
+      await migrateLegacy();
+    } catch (err) { console.error(err); setSync("error"); toast("Error al guardar perfil: " + err.message); }
+    subscribe();
+  });
+
+  // ---------- Exportar (sección activa + filtro) ----------
+  function exportText() {
+    const s = prefs.section, list = filtered(s);
+    return [
+      `ÁLBUM MARIO — ${SECTIONS[s].title}`,
+      `Usuario: ${user ? (user.displayName || user.email) : "-"}`,
+      `Filtro: ${FILTERS[prefs.filter]} — ${list.length} de ${SECTIONS[s].total} — ${new Date().toLocaleString("es-MX")}`,
+      "",
+      list.length ? list.map(x => label(s, x.id) + (x.count >= 2 ? ` (x${x.count - 1} rep.)` : "")).join(", ") : "(ninguna)",
+      ""
+    ].join("\n");
+  }
+  document.querySelectorAll("[data-export]").forEach(el => el.addEventListener("click", async (e) => {
+    e.preventDefault();
+    const txt = exportText();
+    if (el.dataset.export === "copy") {
+      try { await navigator.clipboard.writeText(txt); toast("Lista copiada al portapapeles."); }
+      catch { toast("No se pudo copiar; descarga el .txt."); }
+    } else {
+      const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = Object.assign(document.createElement("a"), { href: url, download: `album-mario-${prefs.section}-${prefs.filter}.txt` });
+      document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+      toast("Archivo .txt descargado.");
+    }
+  }));
+
+  // ---------- Eventos ----------
+  $("btnLogin").addEventListener("click", login);
+
+  document.addEventListener("click", (e) => {
+    const minus = e.target.closest(".minus");
+    if (minus) {
+      const c = minus.closest(".sticker");
+      writeCount(c.dataset.section, c.dataset.id, Math.max(0, getCount(c.dataset.section, c.dataset.id) - 1));
+      return;
+    }
+    const card = e.target.closest(".sticker");
+    if (card) { writeCount(card.dataset.section, card.dataset.id, getCount(card.dataset.section, card.dataset.id) + 1); return; }
+    const pg = e.target.closest("a[data-page]");
+    if (pg) {
+      e.preventDefault();
+      if (pg.parentElement.classList.contains("disabled")) return;
+      prefs.page[pg.dataset.section] = +pg.dataset.page;
+      render();
+    }
+  });
+
+  document.querySelectorAll('input[name="filter"]').forEach(r => r.addEventListener("change", () => {
+    prefs.filter = r.value; prefs.page = {}; render();
+  }));
+  document.querySelectorAll("#sectionTabs button").forEach(b => b.addEventListener("shown.bs.tab", () => {
+    prefs.section = b.dataset.section; savePrefs();
+  }));
+
+  // ---------- Init UI ----------
+  if (!FILTERS[prefs.filter]) prefs.filter = "todas";
+  if (!SECTIONS[prefs.section]) prefs.section = "main";
+  $("f-" + prefs.filter).checked = true;
+  bootstrap.Tab.getOrCreateInstance($("tab-" + prefs.section)).show();
+  render();
+</script>
+</body>
+</html>

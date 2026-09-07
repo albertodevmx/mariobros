@@ -1,0 +1,24 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid",
+        "profile": {
+          ".validate": "newData.hasChildren()"
+        },
+        "counts": {
+          "$section": {
+            ".validate": "$section == 'main' || $section == 'years'",
+            "$id": {
+              ".validate": "$id.matches(/^[0-9]+$/) && newData.isNumber() && newData.val() >= 0"
+            }
+          }
+        },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}

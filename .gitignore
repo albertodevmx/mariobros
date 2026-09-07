@@ -1,0 +1,5 @@
+# Configuración de Firebase con la API key (usa firebase-config.example.js como plantilla)
+firebase-config.js
+
+firebase-debug.log
+.firebase/
